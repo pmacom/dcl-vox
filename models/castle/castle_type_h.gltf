@@ -19,7 +19,7 @@
     "nodes" : [
         {
             "mesh" : 0,
-            "name" : "Cube.056"
+            "name" : "Type_H"
         }
     ],
     "materials" : [
@@ -52,7 +52,7 @@
     ],
     "meshes" : [
         {
-            "name" : "Cube.056",
+            "name" : "Cube.072",
             "primitives" : [
                 {
                     "attributes" : {
@@ -93,74 +93,74 @@
         {
             "bufferView" : 0,
             "componentType" : 5123,
-            "count" : 24,
+            "count" : 48,
             "normalized" : true,
             "type" : "VEC4"
         },
         {
             "bufferView" : 1,
             "componentType" : 5126,
-            "count" : 24,
+            "count" : 48,
             "max" : [
+                0.5000007152557373,
                 0.5,
-                0.5,
-                0.5
+                0.5000002384185791
             ],
             "min" : [
                 -0.5,
                 -0.5,
-                -0.5
+                -0.5000003576278687
             ],
             "type" : "VEC3"
         },
         {
             "bufferView" : 2,
             "componentType" : 5126,
-            "count" : 24,
+            "count" : 48,
             "type" : "VEC2"
         },
         {
             "bufferView" : 3,
             "componentType" : 5126,
-            "count" : 24,
+            "count" : 48,
             "type" : "VEC3"
         },
         {
             "bufferView" : 4,
             "componentType" : 5123,
-            "count" : 36,
+            "count" : 84,
             "type" : "SCALAR"
         }
     ],
     "bufferViews" : [
         {
             "buffer" : 0,
-            "byteLength" : 192,
+            "byteLength" : 384,
             "byteOffset" : 0,
             "target" : 34962
         },
         {
             "buffer" : 0,
-            "byteLength" : 288,
-            "byteOffset" : 192,
+            "byteLength" : 576,
+            "byteOffset" : 384,
             "target" : 34962
         },
         {
             "buffer" : 0,
-            "byteLength" : 192,
-            "byteOffset" : 480,
-            "target" : 34962
-        },
-        {
-            "buffer" : 0,
-            "byteLength" : 288,
-            "byteOffset" : 672,
-            "target" : 34962
-        },
-        {
-            "buffer" : 0,
-            "byteLength" : 72,
+            "byteLength" : 384,
             "byteOffset" : 960,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 576,
+            "byteOffset" : 1344,
+            "target" : 34962
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 168,
+            "byteOffset" : 1920,
             "target" : 34963
         }
     ],
@@ -172,8 +172,8 @@
     ],
     "buffers" : [
         {
-            "byteLength" : 1032,
-            "uri" : "castle_tile_1.bin"
+            "byteLength" : 2088,
+            "uri" : "castle_type_h.bin"
         }
     ]
 }

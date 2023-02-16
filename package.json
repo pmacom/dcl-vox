@@ -20,5 +20,8 @@
     "node": ">=14.0.0",
     "npm": ">=6.0.0",
     "yarn": "please use npm"
+  },
+  "dependencies": {
+    "nearley": "^2.20.1"
   }
 }
