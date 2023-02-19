@@ -22,6 +22,14 @@
     "yarn": "please use npm"
   },
   "dependencies": {
-    "nearley": "^2.20.1"
-  }
+    "colyseus.js": "^0.14.13",
+    "dcldash": "^0.0.34-20230112183923.commit-1cf0347",
+    "nearley": "^2.20.1",
+    "zootools": "^0.1.30"
+  },
+  "bundledDependencies": [
+    "colyseus.js",
+    "dcldash",
+    "zootools"
+  ]
 }

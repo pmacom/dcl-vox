@@ -1,3 +1,4 @@
+import { colyseus } from "src/client/ColyseusClient"
 import { CastleTiles } from "../tiles/castle"
 import { TileData, TileStatus, VoxType } from "../tiles/interfaces"
 import { getNeighborPathSet, getNeighborPaths, getPath, getSurrounding, getWeight } from "./utils"
@@ -23,7 +24,16 @@ export class VoxelManager_Instance {
             this._voxels.set(path, new Voxel(x, y, z))
           }
         }
-      }  
+      }
+      // colyseus.room?.onMessage("add-voxel", (message) => {
+      //   const { x, y, z, tileSetId } = message;
+      //   this.set(x, y, z, tileSetId);
+      // });
+      colyseus.room?.onMessage("remove-voxel", (message) => {
+        log({REMOVE: message})
+        const { x, y, z } = message;
+        this.set(x, y, z, null);
+      });
     }
   
     public set(x:number, y:number, z:number, id: number|null){
@@ -35,11 +45,25 @@ export class VoxelManager_Instance {
     }
   
     public add(x:number, y:number, z:number){
-      this.set(x, y, z, this._tileId)
+      // this.set(x, y, z, this._tileId)
+      colyseus.room?.send("voxel-added", {
+        baseParcel: "0,0",
+        x,
+        y,
+        z,
+        tileSetId: this._tileId,
+      })
+      
     }
-  
+    
     public delete(x:number, y:number, z:number){
-      this.set(x, y, z, null)
+      // this.set(x, y, z, null)
+      colyseus.room?.send("voxel-removed", {
+        baseParcel: "0,0",
+        x,
+        y,
+        z,
+      })
     }
   
     // public has(x:number, y:number, z:number): boolean { return this._v.has(getPath(x,y,z))}
@@ -128,10 +152,10 @@ class Voxel {
       if(!this.entity) this.entity = new Entity()
       if(!this.entity.isAddedToEngine()) engine.addEntity(this.entity)
       this.entity.addComponentOrReplace(this._transform)
-      this.entity.addComponent(new OnPointerDown(this.onClick.bind(this)))
-      this.entity.addComponent(new OnPointerHoverEnter(this.onHoverEnter.bind(this)))
-      this.entity.addComponent(new OnPointerHoverExit(this.onHoverExit.bind(this)))
-      this.entity.addComponent(new BoxShape())
+      this.entity.addComponentOrReplace(new OnPointerDown(this.onClick.bind(this)))
+      this.entity.addComponentOrReplace(new OnPointerHoverEnter(this.onHoverEnter.bind(this)))
+      this.entity.addComponentOrReplace(new OnPointerHoverExit(this.onHoverExit.bind(this)))
+      this.entity.addComponentOrReplace(new BoxShape())
       this.updateNeighbors()
       this.updateSelf()
       this.active = true
