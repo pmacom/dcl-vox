@@ -1,7 +1,7 @@
 {
   "display": {
-    "title": "DCL Scene",
-    "description": "My new Decentraland project",
+    "title": "DCL Vox",
+    "description": "DCL Vox Testbench",
     "navmapThumbnail": "images/scene-thumbnail.png",
     "favicon": "favicon_asset"
   },
@@ -13,22 +13,22 @@
   "main": "bin/game.js",
   "tags": [],
   "scene": {
-    "parcels": ["0,0"],
-    "base": "0,0"
+    "parcels": ["-150,-150"],
+    "base": "-150,-150"
   },
   "spawnPoints": [
     {
       "name": "spawn1",
       "default": true,
       "position": {
-        "x": 0,
-        "y": 0,
-        "z": 0
+        "x": 15.41,
+        "y": 0.88,
+        "z": 4.99
       },
       "cameraTarget": {
-        "x": 8,
-        "y": 1,
-        "z": 8
+        "x": 11.29,
+        "y": 0.88,
+        "z": 4.81
       }
     }
   ],

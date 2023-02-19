@@ -9,6 +9,7 @@ import { getUserData } from "@decentraland/Identity";
 import { Dash_Wait } from "dcldash";
 import { makeid } from "zootools";
 import { VoxelManager_Instance } from "src/vox/manager";
+import { VoxelUI } from "./VoxelUI";
 
 export class ColyseusClient {
     endpoint: string = `wss://dcl-voxel-api.herokuapp.com`;
@@ -19,7 +20,7 @@ export class ColyseusClient {
     connecting: boolean = false;
     onRoomConnectedCbs: ((room: Room) => void)[] = [];
     voxelManager!: VoxelManager_Instance;
-
+    voxelUI = new VoxelUI(this);
     constructor() { }
 
     onRoomConnected(cb: (room: Room) => void) {
@@ -27,25 +28,33 @@ export class ColyseusClient {
         this.options.debug && this.log(`onRoomConnected Callback was set`)
     }
 
-    setConfig(voxelManager: VoxelManager_Instance, endpoint: string, baseParcel: string, location: string, roomName: string, debug: boolean = true) {
-        this.voxelManager = voxelManager;
-        this.endpoint = endpoint;
+    setConfig(
+        config: {
+            voxelManager: VoxelManager_Instance, 
+            endpoint: string, 
+            sceneOwner: string, 
+            baseParcel: string, 
+            nickname: string, 
+            roomName: string, 
+            debug?: boolean,
+        }
+    ) {
+        if(config.debug == undefined) config.debug = true;
+        this.voxelManager = config.voxelManager;
+        this.endpoint = config.endpoint;
         this.client = new Client(this.endpoint);
         this.options = {};
-        this.options.baseParcel = baseParcel;
-        this.options.roomName = roomName;
-        this.options.debug = debug;
+        this.options.baseParcel = config.baseParcel;
+        this.options.nickname = config.nickname;
+        this.options.roomName = config.roomName;
+        this.options.sceneOwner = config.sceneOwner;
+        this.options.debug = config.debug;
         this.options.debug && this.log(`Config was set`)
-        return this.connect({
-            baseParcel,
-            location,
-            roomName,
-            debug,
-        })
+        return this.connect(this.options);
     }
 
     async connect(options: any & {
-        location: string;
+        nickname: string;
         roomName: string;
         debug?: boolean;
     } = this.options): Promise<Room | null> {
@@ -86,12 +95,19 @@ export class ColyseusClient {
             if (this.room) {
                 this.onRoomConnectedCbs.forEach(cb => cb(this.room!));
                 this.onConnected(id);
-                // this.room.onStateChange((state) => {
-                //     this.options.debug && this.log(`STATE CHANGE`, state)
-                //     for (const [voxelId, voxel] of state.voxels.entries()) {
-                //         this.voxelManager.set(voxel.x, voxel.y, voxel.z, voxel.tileSetId);
-                //     }
-                // });
+                this.room.onStateChange((state) => {
+                    this.log(`STATE CHANGE`, state)
+                    this.voxelUI.setSceneId(state.scene.id);
+                    this.voxelUI.setVoxelCount(state.voxels.size);
+                    this.voxelUI.setSceneName(state.scene.nickname);
+                    // for (const [voxelId, voxel] of state.voxels.entries()) {
+                    //     this.voxelManager.set(voxel.x, voxel.y, voxel.z, voxel.tileSetId);
+                    // }
+                });
+                this.room.onMessage("notification", (msg: any) => {
+                    const { message } = msg;
+                    this.voxelUI.notification(message);
+                });
                 this.room.onMessage("sync-voxels", (message: any) => {
                     message.voxels.forEach((voxel: any) => {
                         this.voxelManager.set(voxel.x, voxel.y, voxel.z, voxel.tileSetId);
@@ -104,6 +120,13 @@ export class ColyseusClient {
                 this.room.onMessage("remove-voxel", (message) => {
                     const { x, y, z } = message;
                     this.voxelManager.set(x, y, z, null);
+                });
+                this.room.onMessage("reset-scene", (message) => {
+                    for(const [key, vox] of this.voxelManager._voxels.entries()){
+                        if(!(vox.x === 8 && vox.y === 0 && vox.z === 8)){
+                            this.voxelManager.set(vox.x, vox.y, vox.z, null);
+                        }
+                    }
                 });
                 this.room.onLeave((code) => {
                     this.options.debug && this.log(`Left, id:${id} code =>`, code);
