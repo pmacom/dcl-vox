@@ -25,15 +25,6 @@ export class VoxelManager_Instance {
           }
         }
       }
-      // colyseus.room?.onMessage("add-voxel", (message) => {
-      //   const { x, y, z, tileSetId } = message;
-      //   this.set(x, y, z, tileSetId);
-      // });
-      colyseus.room?.onMessage("remove-voxel", (message) => {
-        log({REMOVE: message})
-        const { x, y, z } = message;
-        this.set(x, y, z, null);
-      });
     }
   
     public set(x:number, y:number, z:number, id: number|null){
@@ -45,7 +36,6 @@ export class VoxelManager_Instance {
     }
   
     public add(x:number, y:number, z:number){
-      // this.set(x, y, z, this._tileId)
       colyseus.room?.send("voxel-added", {
         baseParcel: "0,0",
         x,
@@ -53,11 +43,9 @@ export class VoxelManager_Instance {
         z,
         tileSetId: this._tileId,
       })
-      
     }
     
     public delete(x:number, y:number, z:number){
-      // this.set(x, y, z, null)
       colyseus.room?.send("voxel-removed", {
         baseParcel: "0,0",
         x,
