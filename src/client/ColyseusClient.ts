@@ -86,16 +86,21 @@ export class ColyseusClient {
             if (this.room) {
                 this.onRoomConnectedCbs.forEach(cb => cb(this.room!));
                 this.onConnected(id);
-                this.room.onStateChange((state) => {
-                    this.options.debug && this.log(`STATE CHANGE`, state)
-                    for (const [voxelId, voxel] of state.voxels.entries()) {
-                        this.voxelManager.set(voxel.x, voxel.y, voxel.z, voxel.tileSetId);
-                    }
-                });
-                // this.room.onMessage("add-voxel", (message) => {
-                //     const { x, y, z, tileSetId } = message;
-                //     this.voxelManager.set(x, y, z, tileSetId);
+                // this.room.onStateChange((state) => {
+                //     this.options.debug && this.log(`STATE CHANGE`, state)
+                //     for (const [voxelId, voxel] of state.voxels.entries()) {
+                //         this.voxelManager.set(voxel.x, voxel.y, voxel.z, voxel.tileSetId);
+                //     }
                 // });
+                this.room.onMessage("sync-voxels", (message: any) => {
+                    message.voxels.forEach((voxel: any) => {
+                        this.voxelManager.set(voxel.x, voxel.y, voxel.z, voxel.tileSetId);
+                    })
+                });
+                this.room.onMessage("add-voxel", (message) => {
+                    const { x, y, z, tileSetId } = message;
+                    this.voxelManager.set(x, y, z, tileSetId);
+                });
                 this.room.onMessage("remove-voxel", (message) => {
                     const { x, y, z } = message;
                     this.voxelManager.set(x, y, z, null);
