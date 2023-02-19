@@ -6,42 +6,49 @@ const bgTxt = new Texture("images/corner-ui.png");
 const btnTxt = new Texture("images/ui-button.png");
 
 export class VoxelUI {
+    rect: UIContainerRect;
     bg: UIImage;
     sceneNameInput: UIInputText;
     sceneId: UIText;
     voxels: UIText;
     notify: UIText;
     buttons: typeof Map = new Map();
+
     constructor(public client: ColyseusClient){
-        this.bg = new UIImage(Dash_GlobalCanvas, bgTxt);
+
+        this.rect = new UIContainerRect(Dash_GlobalCanvas)
+        this.rect.width = 350;
+        this.rect.height = 175;
+        this.rect.hAlign = "right";
+        this.rect.vAlign = "top";
+        this.rect.positionX  = 0
+
+        this.bg = new UIImage(this.rect, bgTxt);
         this.bg.sourceWidth = 1000;
         this.bg.sourceHeight = 500;
         this.bg.sourceLeft = 0;
         this.bg.sourceTop = 0;
         // this.bg.width = 1000;
         // this.bg.width = 500;
-        this.bg.width = 500;
-        this.bg.height = 250;
-        this.bg.positionX  = -150
-        this.bg.hAlign = "right";
-        this.bg.vAlign = "top";
-        this.bg.isPointerBlocker = true;
-        this.bg.visible = true;
+        this.bg.width = 350;
+        this.bg.height = 175;
+        this.bg.opacity = 0.3;
+
 
         this.sceneId = new UIText(this.bg);
         this.sceneId.width = 250;
         this.sceneId.height = 30;
         this.sceneId.positionX = 110;
-        this.sceneId.positionY = 100;
-        this.sceneId.fontSize = 14;
+        this.sceneId.positionY = 75;
+        this.sceneId.fontSize = 10;
         this.setSceneId(``)
 
         this.voxels = new UIText(this.bg);
         this.voxels.width = 250;
         this.voxels.height = 30;
         this.voxels.positionX = 110;
-        this.voxels.positionY = 80;
-        this.voxels.fontSize = 14;
+        this.voxels.positionY = 60;
+        this.voxels.fontSize = 10;
         this.setVoxelCount(0);
 
         this.notify = new UIText(this.bg);
@@ -63,15 +70,15 @@ export class VoxelUI {
         sceneNameLabel.width = 250;
         sceneNameLabel.height = 30;
         sceneNameLabel.value = "Scene Name:"
-        sceneNameLabel.positionX = -90;
-        sceneNameLabel.positionY = 66;
-        sceneNameLabel.fontSize = 12;
+        sceneNameLabel.positionX = -27;
+        sceneNameLabel.positionY = 53;
+        sceneNameLabel.fontSize = 10;
 
         this.sceneNameInput = new UIInputText(this.bg);
-        this.sceneNameInput.width = 250;
+        this.sceneNameInput.width = 125;
         this.sceneNameInput.height = 30;
         this.sceneNameInput.positionX = -90;
-        this.sceneNameInput.positionY = 30;
+        this.sceneNameInput.positionY = 20;
         this.sceneNameInput.vTextAlign = "center";
         this.sceneNameInput.paddingLeft = 10;
         this.sceneNameInput.paddingRight = 10;
@@ -83,9 +90,9 @@ export class VoxelUI {
             label:  "Load", 
             color: Color4.Green(),
             width: 80,
-            height: 40,
-            positionX: 90, 
-            positionY: 30, 
+            height: 30,
+            positionX: 25, 
+            positionY: 20, 
             callback: () => {
                 log("LOAD", this.sceneNameInput.value)
                 this.client.room?.send("load-scene-name", {
@@ -99,9 +106,9 @@ export class VoxelUI {
             label:  "New", 
             color: Color4.Blue(),
             width: 80,
-            height: 40,
-            positionX: 180, 
-            positionY: 30, 
+            height: 30,
+            positionX: 115, 
+            positionY: 20, 
             callback: () => {
                 log("NEW", this.sceneNameInput.value)
                 this.client.room?.send("create-new-scene", {
