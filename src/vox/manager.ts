@@ -117,6 +117,8 @@ export class VoxelManager_Instance {
 
 
 
+const grass = new GLTFShape('models/mstyle/grass.glb')
+const dirt = new GLTFShape('models/mstyle/dirt.glb')
 
 class Voxel {
     public active: boolean = false
@@ -163,9 +165,10 @@ class Voxel {
     }
 
     public updateSelf(){
-        log('OKAY WELL LETS IMAGINE THIS WORKS INSTEAD THEN')
-        let occupied = [...new Array(27)].map(()=>'1')
-        log({ occupied })
+        const hasAbove = VoxelManager.get(this.x, this.y+1, this.z)
+        const hasBelow = VoxelManager.get(this.x, this.y-1, this.z)
+        log({ hasAbove, hasBelow })
+        this.entity?.addComponentOrReplace(hasAbove ? dirt : grass)
     }
   
     public updateSelf2(){

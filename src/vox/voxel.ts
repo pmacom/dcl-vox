@@ -7,6 +7,9 @@ import { getNeighborPathSet } from "./utils"
 declare const Map:any
 declare const Set:any
 
+const grass = new GLTFShape('models/mstyle/grass.glb')
+const dirt = new GLTFShape('models/mstyle/dirt.glb')
+
 export class Voxel {
     public active: boolean = false
     private entity: Entity | null | undefined
@@ -52,18 +55,7 @@ export class Voxel {
     }
   
     public updateSelf(){
-      // Look at the current tileset
-      // Look at all the neighbors IDs and figure out if they are the same, empty, any, ect
-      // Derrive a weight for the tile based on how well it matches
-  
-      let modelSrc = CastleTiles[0].model
-      let weight = -1
-      let rotation = new Quaternion()
-  
-      CastleTiles.forEach(()=>{
-        
-      })
-  
+      // if()
       // this.entity?.addComponentOrReplace(new GLTFShape(modelSrc))
     }
   
