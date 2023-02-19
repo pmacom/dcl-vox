@@ -27,12 +27,19 @@ export class VoxelManager_Instance {
       }
     }
   
-    public set(x:number, y:number, z:number, id: number|null){
+    public set(x:number, y:number, z:number, id: number|null, preventRender: boolean = false){
       const path = getPath(x, y, z)
       if(!this._voxels.has(path)){ return } // Ignore any paths not included from init
       const voxel = this._voxels.get(path) as Voxel
       voxel.tileId = id
-      if(id === null){ voxel.hide() }else{ voxel.show() }
+      if(id === null && !preventRender){ voxel.hide() }else{ voxel.show() }
+    }
+
+    public renderAll(){
+      this._voxels.forEach((voxel: Voxel) => {
+        const id = voxel.tileId
+        if(id == null){ voxel.hide() }else{ voxel.show()}
+      })
     }
   
     public add(x:number, y:number, z:number){
