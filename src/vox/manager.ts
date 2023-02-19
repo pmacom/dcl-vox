@@ -165,10 +165,11 @@ class Voxel {
     }
 
     public updateSelf(){
-        const hasAbove = VoxelManager.get(this.x, this.y+1, this.z)
-        const hasBelow = VoxelManager.get(this.x, this.y-1, this.z)
-        log({ hasAbove, hasBelow })
-        this.entity?.addComponentOrReplace(hasAbove ? dirt : grass)
+        const hasAbove = VoxelManager.get(this.x, this.y+1, this.z) as Voxel
+        const hasBelow = VoxelManager.get(this.x, this.y-1, this.z) as Voxel
+        // log(!!hasAbove, !!hasBelow, hasAbove)
+        this.entity?.addComponentOrReplace(hasAbove && hasAbove.active ? dirt : grass)
+        if(hasBelow && hasBelow.active){ hasBelow.updateSelf() }
     }
   
     public updateSelf2(){
@@ -207,6 +208,11 @@ class Voxel {
     }
   
     public updateNeighbors(){
+      // const hasAbove = VoxelManager.get(this.x, this.y+1, this.z) as Voxel
+      // const hasBelow = VoxelManager.get(this.x, this.y-1, this.z) as Voxel
+      // if(hasAbove && hasAbove.active){ hasBelow.updateSelf() }
+      // log('updating')
+      // if(hasAbove && hasBelow.active){ hasAbove.updateSelf() }
     //   const neighbors: Voxel[] = []
     //   this._neighbors.forEach((path:string) => {
     //     const voxel = VoxelManager.getActiveFromPath(path)
