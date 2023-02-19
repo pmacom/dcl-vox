@@ -20,17 +20,17 @@ export class ColyseusClient {
     onRoomConnectedCbs: ((room: Room) => void)[] = [];
     voxelManager!: VoxelManager_Instance;
 
-    constructor() {}
+    constructor() { }
 
-    onRoomConnected(cb: (room: Room) => void){
+    onRoomConnected(cb: (room: Room) => void) {
         this.onRoomConnectedCbs.push(cb);
         this.options.debug && this.log(`onRoomConnected Callback was set`)
     }
 
-    setConfig(voxelManager: VoxelManager_Instance, endpoint: string, baseParcel: string, location: string, roomName: string, debug: boolean = true){
+    setConfig(voxelManager: VoxelManager_Instance, endpoint: string, baseParcel: string, location: string, roomName: string, debug: boolean = true) {
         this.voxelManager = voxelManager;
         this.endpoint = endpoint;
-        this.client = new Client(this.endpoint); 
+        this.client = new Client(this.endpoint);
         this.options = {};
         this.options.baseParcel = baseParcel;
         this.options.roomName = roomName;
@@ -50,7 +50,7 @@ export class ColyseusClient {
         debug?: boolean;
     } = this.options): Promise<Room | null> {
 
-        if(options.debug == undefined) this.options.debug = false;
+        if (options.debug == undefined) this.options.debug = false;
         else this.options.debug = options.undefined;
 
         //An ID for debugging connection instances
@@ -60,7 +60,7 @@ export class ColyseusClient {
         this.attempts++;
         if (this.attempts > 15) this.attempts = 15;
         this.options.debug && this.log(`Attempting connection to server id:${id} (attempts: ${this.attempts})`)
-        
+
         //Populate user and options
         options.realm = await getCurrentRealm();
         options.userData = await getUserData();
@@ -83,19 +83,23 @@ export class ColyseusClient {
 
         try {
             this.room = await this.client.joinOrCreate<any>(options.roomName, options);
-            if(this.room){
+            if (this.room) {
                 this.onRoomConnectedCbs.forEach(cb => cb(this.room!));
                 this.onConnected(id);
                 this.room.onStateChange((state) => {
                     this.options.debug && this.log(`STATE CHANGE`, state)
-                    for(const [voxelId, voxel] of state.voxels.entries()){
+                    for (const [voxelId, voxel] of state.voxels.entries()) {
                         this.voxelManager.set(voxel.x, voxel.y, voxel.z, voxel.tileSetId);
                     }
                 });
+                // this.room.onMessage("add-voxel", (message) => {
+                //     const { x, y, z, tileSetId } = message;
+                //     this.voxelManager.set(x, y, z, tileSetId);
+                // });
                 this.room.onMessage("remove-voxel", (message) => {
                     const { x, y, z } = message;
                     this.voxelManager.set(x, y, z, null);
-                  });
+                });
                 this.room.onLeave((code) => {
                     this.options.debug && this.log(`Left, id:${id} code =>`, code);
                     this.onDisconnect(id, handleReconnection);
