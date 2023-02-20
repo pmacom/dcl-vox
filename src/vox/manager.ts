@@ -19,14 +19,14 @@ export class VoxelManager_Instance {
     }
   
     private init(){
-      // for(let x=0; x<16; x++){
-      //   for(let y=0; y<16; y++){
-      //     for(let z=0; z<16; z++){
-      //       const path = getPath(x,y,z)
-      //       this._voxels.set(path, new Voxel(x, y, z))
-      //     }
-      //   }
-      // }
+      for(let x=0; x<16; x++){
+        for(let y=0; y<16; y++){
+          for(let z=0; z<16; z++){
+            const path = getPath(x,y,z)
+            this._voxels.set(path, new Voxel(x, y, z))
+          }
+        }
+      }
     }
   
     public set(x:number, y:number, z:number, id: number|null, preventRender: boolean = false){
