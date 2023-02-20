@@ -61,7 +61,6 @@ export class VoxelUI {
         this.notify.vTextAlign = "center";
         this.notification(``)
 
-
         /**
          * Set the scene name
          * or create a new scene with the name
