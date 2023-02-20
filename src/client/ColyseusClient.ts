@@ -111,8 +111,9 @@ export class ColyseusClient {
                 });
                 this.room.onMessage("sync-voxels", (message: any) => {
                     message.voxels.forEach((voxel: any) => {
-                        this.voxelManager.set(voxel.x, voxel.y, voxel.z, voxel.tileSetId);
+                        this.voxelManager.set(voxel.x, voxel.y, voxel.z, voxel.tileSetId, true);
                     })
+                    this.voxelManager.renderAll()
                 });
                 this.room.onMessage("add-voxel", (message) => {
                     const { x, y, z, tileSetId } = message;

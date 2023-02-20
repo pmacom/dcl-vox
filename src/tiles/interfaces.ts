@@ -7,6 +7,22 @@ export enum VoxType {
     EmptyOrOther,
 }
 
+export enum VoxTypeNEXTVERSION {
+    NULL,
+    IsAnyTile,
+    IsSameTileId,
+    IsEmpty,
+    IsEmptyOrOther,
+
+    IsFloorPlan,
+    IsExterior,
+    IsInterior,
+    IsFloor,
+    IsGround,
+    IsWindow,
+    IsDoorway,
+}
+
 export enum VoxTType {
     NULL,
     FREE,
