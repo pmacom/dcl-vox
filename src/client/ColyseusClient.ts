@@ -93,6 +93,7 @@ export class ColyseusClient {
         try {
             this.room = await this.client.joinOrCreate<any>(options.roomName, options);
             if (this.room) {
+                this.log("YUHH")
                 this.onRoomConnectedCbs.forEach(cb => cb(this.room!));
                 this.onConnected(id);
                 this.room.onStateChange((state) => {
@@ -158,4 +159,4 @@ export class ColyseusClient {
     }
 }
 
-export const colyseus = new ColyseusClient();
+export const client = new ColyseusClient();

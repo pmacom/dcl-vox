@@ -1,4 +1,6 @@
-import { colyseus } from "src/client/ColyseusClient"
+import { client } from "src/client/ColyseusClient"
+import { AppState } from "src/state/AppState"
+import { GameModes } from "src/state/events/Modes"
 import { CastleTiles } from "../tiles/castle"
 import { TileData, TileStatus, VoxType } from "../tiles/interfaces"
 import { getNeighborPathSet, getNeighborPaths, getPath, getSurrounding, getWeight } from "./utils"
@@ -36,7 +38,7 @@ export class VoxelManager_Instance {
     }
   
     public add(x:number, y:number, z:number){
-      colyseus.room?.send("voxel-added", {
+      client.room?.send("voxel-added", {
         baseParcel: "0,0",
         x,
         y,
@@ -46,7 +48,7 @@ export class VoxelManager_Instance {
     }
     
     public delete(x:number, y:number, z:number){
-      colyseus.room?.send("voxel-removed", {
+      client.room?.send("voxel-removed", {
         baseParcel: "0,0",
         x,
         y,
@@ -243,11 +245,24 @@ class Voxel {
     }
   
     onClick(event: InputEventResult){
-      // log(event.hit?.meshName)
+      if(AppState.mode === GameModes.PLACEMENT){
+        log("PLACE ITEM")
+        if(event.hit){
+          log("HIT")
+          if(AppState.isHolding() && AppState.holdingMediaItem){
+            log("HOLDING")
+            AppState.pickOrPlaceMediaItem(AppState.holdingMediaItem, false, event.hit.hitPoint as any, event.hit.normal as any);
+          }
+        }
+      }
     }
   
     onHoverEnter(){
-      VoxelSelector.position = this._transform.position
+      if(AppState.mode === GameModes.EDIT){
+        VoxelSelector.position = this._transform.position;
+      }else{
+        VoxelSelector.position = new Vector3(0, 0, 0);
+      }
     }
   
     onHoverExit(){
@@ -290,14 +305,16 @@ class VoxelSelector_Instance {
     }
   
     onEvent(event: InputEventResult){
-      switch(event.buttonId){
-          case 0:
-          case 1:
-            this.onAdd(event)
-            break;
-          case 2:
-            this.onDelete(event)
-            break;
+      if(AppState.mode === GameModes.EDIT){
+        switch(event.buttonId){
+            case 0:
+            case 1:
+              this.onAdd(event)
+              break;
+            case 2:
+              this.onDelete(event)
+              break;
+        }
       }
     }
   
