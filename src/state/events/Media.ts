@@ -1,22 +1,21 @@
 import { HoldableMediaEntity } from "src/media/HoldableMediaEntity";
 
-export enum GamePlacementItem {
-    NFT,
-    IMAGE,
-    VIDEO,
+export enum MediaType {
+    NONE = "NONE",
+    NFT = "NFT",
+    IMAGE = "IMAGE",
+    VIDEO = "VIDEO",
 }
 
 @EventConstructor()
-export class PlacementItemChanged {
-    constructor(public placementItem: GamePlacementItem) { }
+export class MediaItemChanged {
+    constructor(public mediaType: MediaType) { }
 }
 
 @EventConstructor()
 export class MediaItemPickedUp {
     constructor(
         public item: HoldableMediaEntity,
-        public placementItem: GamePlacementItem, 
-        public id: string,
     ) { }
 }
 
@@ -24,8 +23,6 @@ export class MediaItemPickedUp {
 export class MediaItemPlaced {
     constructor(
         public item: HoldableMediaEntity,
-        public placementItem: GamePlacementItem, 
-        public id: string,
         public hitPoint: Vector3,
         public normal: Vector3,
     ) { }

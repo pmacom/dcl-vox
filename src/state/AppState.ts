@@ -1,15 +1,18 @@
 import { HoldableMediaEntity } from "src/media/HoldableMediaEntity";
+import { MediaManager } from "src/media/Manager";
 import { EventListener } from "./events/listener";
 import { GameModes, ModeChanged } from "./events/Modes";
-import { GamePlacementItem, MediaItemPickedUp, MediaItemPlaced, PlacementItemChanged } from "./events/Placements";
+import { MediaItemPickedUp, MediaItemPlaced, MediaType, MediaItemChanged } from "./events/Media";
 
 export class _AppState {
     mode: GameModes = GameModes.VIEW;
-    placementItem: GamePlacementItem = GamePlacementItem.NFT;
+    mediaType: MediaType = MediaType.NONE;
     holding: boolean = false;
     holdingMediaItem: HoldableMediaEntity | undefined;
     listener = new EventListener(this);
-    constructor() {}
+    constructor() {
+
+    }
     isView() { return this.mode === GameModes.VIEW; }
     isEdit() { return this.mode === GameModes.EDIT; }
     isPlacement() { return this.mode === GameModes.PLACEMENT; }
@@ -20,20 +23,26 @@ export class _AppState {
         this.listener.events.fireEvent(new ModeChanged(this.mode));
     }
 
-    public setPlacementItem(placementItem: GamePlacementItem) {
-        this.placementItem = placementItem;
-        this.listener.events.fireEvent(new PlacementItemChanged(this.placementItem));
+    public setMediaType(mediaType: MediaType) {
+        this.mediaType = mediaType;
+        this.listener.events.fireEvent(new MediaItemChanged(this.mediaType));
     }
     
     public pickOrPlaceMediaItem(item: HoldableMediaEntity, holding: boolean, hitPoint?: Vector3, normal?: Vector3){
         this.holding = holding;
-        log({ holding, hitPoint, normal })
         if(holding){
+            if(item.mediaType !== this.mediaType){
+                this.setMediaType(item.mediaType);
+            }
             this.holdingMediaItem = item;
-            this.listener.events.fireEvent(new MediaItemPickedUp(item, this.placementItem, "0"));
+            this.listener.events.fireEvent(new MediaItemPickedUp(item));
         }else{
             this.holdingMediaItem = undefined;
-            this.listener.events.fireEvent(new MediaItemPlaced(item, this.placementItem, "0", hitPoint!, normal!));
+            this.listener.events.fireEvent(new MediaItemPlaced(item, hitPoint!, normal!));
+            this.setMediaType(MediaType.NONE);
+            // MediaManager.add(item.type, item.source, item.media.getComponent(Transform));
+
+            //get rid of the local item because its gonna be re synced 
         }
     }
 }

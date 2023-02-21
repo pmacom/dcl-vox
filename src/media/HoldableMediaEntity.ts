@@ -1,36 +1,69 @@
 import { getUserData } from "@decentraland/Identity";
 import { AppState } from "src/state/AppState";
-import { MediaItemPickedUp, MediaItemPlaced } from "src/state/events/Placements";
-
-
+import { GameModes, ModeChanged } from "src/state/events/Modes";
+import { MediaItemPickedUp, MediaItemPlaced, MediaType } from "src/state/events/Media";
 
 // @Component("IsHoldable")
 // export class IsHoldable {
 //   avatarId!: string
-  
 // }
-
-
 
 export class HoldableMediaEntity extends Entity {
     avatarId!: string;
     media: Entity = new Entity()
 
-    constructor(public defaultTf: TransformConstructorArgs) {
+    constructor(public id: string | undefined, public source: string, public mediaType: MediaType, public defaultTf: TransformConstructorArgs) {
         super()
         this.addComponent(new Transform())
         this.media.addComponent(new Transform(defaultTf));
-        this.media.addComponent(new OnPointerDown(this.pickUp.bind(this), {
-            button: ActionButton.ANY,
-            hoverText: '(E) Pick Up\n(F) Change Metadata'
-        }))
         this.media.setParent(this);
         executeTask(async () => {
             this.avatarId = (await getUserData())?.userId!;
         })
+        AppState.listener.addListener<ModeChanged>(
+            "mode-changed",
+            ModeChanged,
+            ({ mode }) => {
+                switch (mode) {
+                    case GameModes.VIEW: {
+                        this.bindViewMode()
+                    } break;
+                    case GameModes.EDIT: {
+                        this.bindEditMode()
+                    } break;
+                    case GameModes.PLACEMENT: {
+                        this.bindPlacementMode()
+                    } break;
+                }
+            },
+        );
+    }
+    setId(id: string) {
+        this.id = id;
+    }
+    bindViewMode() {
+        this.media.addComponentOrReplace(new OnPointerDown(this.pickUp.bind(this), {
+            button: ActionButton.ANY,
+            hoverText: 'View NFT'
+        }))
+    }
+    bindEditMode() {
+        this.media.addComponentOrReplace(new OnPointerDown(this.pickUp.bind(this), {
+            button: ActionButton.ANY,
+            hoverText: '(E) Pick Up'
+        }))
+    }
+    bindPlacementMode() {
+        this.media.addComponentOrReplace(new OnPointerDown(this.pickUp.bind(this), {
+            button: ActionButton.ANY,
+            hoverText: '(E) Pick Up\n(F) Change Metadata'
+        }))
     }
     pickUp() {
         AppState.pickOrPlaceMediaItem(this, true);
+        if (AppState.mode !== GameModes.PLACEMENT) {
+            AppState.setMode(GameModes.PLACEMENT);
+        }
         this.media.addComponentOrReplace(new Transform({
             position: new Vector3(0.5, -0.5, 1)
         }));
@@ -42,62 +75,44 @@ export class HoldableMediaEntity extends Entity {
             })
         )
     }
-    placeItem(hitPoint: Vector3, normal: Vector3) {
-        // normal = new Vector3(normal.x, normal.y, normal.y);
-        if(this.hasComponent(AttachToAvatar)){
+    getPlacedTransform(hitPoint: Vector3, normal: Vector3) {
+        if (this.hasComponent(AttachToAvatar)) {
             this.removeComponent(AttachToAvatar);
         }
-
-        this.getComponentOrCreate(Transform).position = new Vector3()
-        this.media.getComponentOrCreate(Transform).position = hitPoint
-
-
-        const { x, y, z } = hitPoint
- 
-        const targetPosition = new Vector3(x,y,z).addInPlace(normal)
-        this.media.getComponentOrCreate(Transform).lookAt(targetPosition)
-        this.media.getComponentOrCreate(Transform).rotate(Vector3.Up(), 180)
-        
-        // log(this.media.getComponent(Transform).position, hitPoint, normal)
-
-        // const transform = this.media.getComponentOrCreate(Transform)
-        // const inch = Vector3.Lerp(Vector3.Zero(), normal.negate(), .1)
-        
-
-       
-        
-
-        log({ hitPoint })
+        // this.getComponentOrCreate(Transform).position = new Vector3();
+        // const inch = Vector3.Lerp(Vector3.Zero(), normal, .1);
         // const { x, y, z } = hitPoint
-        // this.getComponentOrCreate(Transform).position.setAll(0)
-        // this.getComponentOrCreate(Transform).rotation.setEuler(0,0,0)
-        // transform.position.set(x,y,z)
-        // transform.rotation.setEuler(0,0,0)
-        // const direction = Vector3.Add(transform.position, normal.negate())
-        // transform.lookAt(direction.addInPlace(inch))
+        // this.media.getComponentOrCreate(Transform).position = new Vector3(x, y, z).add(inch);
+        // const targetPosition = new Vector3(x, y, z).add(normal)
+        // this.media.getComponentOrCreate(Transform).lookAt(targetPosition)
+        // this.media.getComponentOrCreate(Transform).rotate(Vector3.Up(), 180)
+        this.getComponentOrCreate(Transform).position = new Vector3();
+        const inch = Vector3.Lerp(Vector3.Zero(), normal, .025);
+        const { x, y, z } = hitPoint
+        const transform = this.media.getComponentOrCreate(Transform)
+        transform.position = new Vector3(x, y, z).add(inch);
+        const targetPosition = new Vector3(x, y, z).addInPlace(normal)
+        transform.lookAt(targetPosition)
+        transform.rotate(Vector3.Up(), 180)
 
-        // transform.rotation.setFromToRotation(new Vector3(x,y,z), direction.addInPlace(inch))
-        // this.media.addComponentOrReplace(transform);
+        return transform;
+    }
+    putDownRevert() {
+        if (this.hasComponent(AttachToAvatar)) {
+            this.removeComponent(AttachToAvatar);
+        }
+        this.media.addComponentOrReplace(new Transform(this.defaultTf));
+    }
+    remove(){
+        if(this.isAddedToEngine()) engine.removeEntity(this);
+    }
+    formatTransform(tf: Transform) {
+        const {
+            position: { x, y, z },
+            scale: { x: sx, y: sy, z: sz },
+            rotation,
+        } = tf;
+        const { x: rx, y: ry, z: rz } = rotation.eulerAngles;
+        return { x, y, z, sx, sy, sz, rx, ry, rz }
     }
 }
-
-AppState.listener.addListener<MediaItemPickedUp>(
-    "media-item-picked-up",
-    MediaItemPickedUp,
-    ({ item, placementItem, id }) => {
-        log("media-item-picked-up", {
-            item, placementItem, id
-        })
-    },
-);
-
-AppState.listener.addListener<MediaItemPlaced>(
-    "media-item-placed",
-    MediaItemPlaced,
-    ({ item, placementItem, id, hitPoint, normal }) => {
-        log("media-item-placed", {
-            item, placementItem, id, hitPoint, normal
-        })
-        item.placeItem(hitPoint, normal);
-    },
-);

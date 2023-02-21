@@ -1,6 +1,9 @@
-import { Dash_GlobalCanvas, Dash_Wait } from "dcldash";
+import { Dash_GlobalCanvas } from "dcldash";
+import { Image } from "src/media/Image";
+import { NFT } from "src/media/NFT";
+import { Video } from "src/media/Video";
 import { GameModes, ModeChanged } from "src/state/events/Modes";
-import { GamePlacementItem, PlacementItemChanged } from "src/state/events/Placements";
+import { MediaType, MediaItemChanged } from "src/state/events/Media";
 import { AppState } from "../state/AppState";
 import { ColyseusClient } from "./ColyseusClient";
 
@@ -131,7 +134,11 @@ export class VoxelUI {
             height: 25,
             positionX: -123,
             positionY: -25,
-            callback: () => AppState.setPlacementItem(GamePlacementItem.NFT),
+            callback: () => AppState.mediaType !== MediaType.NFT ? (
+                AppState.setMediaType(MediaType.NFT)
+            ) : (
+                AppState.setMediaType(MediaType.NONE)
+            ),
         })
 
         this.addButton({
@@ -142,7 +149,11 @@ export class VoxelUI {
             height: 25,
             positionX: -55,
             positionY: -25,
-            callback: () => AppState.setPlacementItem(GamePlacementItem.IMAGE),
+            callback: () => AppState.mediaType !== MediaType.IMAGE ? (
+                AppState.setMediaType(MediaType.IMAGE)
+            ) : (
+                AppState.setMediaType(MediaType.NONE)
+            ),
         })
 
         this.addButton({
@@ -153,7 +164,11 @@ export class VoxelUI {
             height: 25,
             positionX: 15,
             positionY: -25,
-            callback: () => AppState.setPlacementItem(GamePlacementItem.VIDEO),
+            callback: () => AppState.mediaType !== MediaType.VIDEO ? (
+                AppState.setMediaType(MediaType.VIDEO)
+            ) : (
+                AppState.setMediaType(MediaType.NONE)
+            ),
         })
 
 
@@ -204,14 +219,27 @@ export class VoxelUI {
             ({ mode }) => this.renderMode(),
         );
 
-        AppState.listener.addListener<PlacementItemChanged>(
+        AppState.listener.addListener<MediaItemChanged>(
             "placement-item-changed",
-            PlacementItemChanged,
-            ({ placementItem }) => this.renderMode(),
+            MediaItemChanged,
+            ({ mediaType }) => {
+                this.renderMode();
+                if(mediaType !== MediaType.NONE){
+                    
+                    //if not holding create a new item
+                    if(!AppState.holding && !AppState.holdingMediaItem){
+                       
+                    }else{
+                        //already holding something
+                        //is it the right MediaType
+                        log("already holding replace with new item id")
+                    }
+                }
+            },
         );
 
         AppState.setMode(GameModes.VIEW);
-        AppState.setPlacementItem(GamePlacementItem.NFT);
+        AppState.setMediaType(MediaType.NONE);
     }
     addButton(
         config: {
@@ -288,25 +316,25 @@ export class VoxelUI {
                 this.buttons.get("placement").button.opacity = 1;
             } break;
         }
-        const showPlacementItems = AppState.mode === GameModes.PLACEMENT
+        const showMediaOptions = AppState.mode === GameModes.PLACEMENT
         const nft = this.buttons.get("nft");
         const image = this.buttons.get("image");
         const video = this.buttons.get("video");
         // log({ showPlacementItems, nft, image, video })
 
-        nft.button.isPointerBlocker = showPlacementItems;
-        nft.button.visible = showPlacementItems;
-        nft.text.visible = showPlacementItems;
-        nft.button.opacity = AppState.placementItem === GamePlacementItem.NFT ? 1 : 0;
+        nft.button.isPointerBlocker = showMediaOptions;
+        nft.button.visible = showMediaOptions;
+        nft.text.visible = showMediaOptions;
+        nft.button.opacity = AppState.mediaType === MediaType.NFT ? 1 : 0;
         
-        video.button.isPointerBlocker = showPlacementItems;
-        video.button.visible = showPlacementItems;
-        video.text.visible = showPlacementItems;
-        video.button.opacity = AppState.placementItem === GamePlacementItem.VIDEO ? 1 : 0;
+        video.button.isPointerBlocker = showMediaOptions;
+        video.button.visible = showMediaOptions;
+        video.text.visible = showMediaOptions;
+        video.button.opacity = AppState.mediaType === MediaType.VIDEO ? 1 : 0;
         
-        image.button.isPointerBlocker = showPlacementItems;
-        image.button.visible = showPlacementItems;
-        image.text.visible = showPlacementItems;
-        image.button.opacity = AppState.placementItem === GamePlacementItem.IMAGE ? 1 : 0;
+        image.button.isPointerBlocker = showMediaOptions;
+        image.button.visible = showMediaOptions;
+        image.text.visible = showMediaOptions;
+        image.button.opacity = AppState.mediaType === MediaType.IMAGE ? 1 : 0;
     }
 }

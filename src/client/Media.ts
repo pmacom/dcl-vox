@@ -1,10 +1,5 @@
 import { Dash_Cache_Texture, Dash_Cache_VideoClip, Dash_Cache_VideoMaterial } from "dcldash";
-
-export enum MediaType {
-    NFT = "NFT",
-    IMAGE = "IMAGE",
-    VIDEO = "VIDEO",
-}
+import { MediaType } from "src/state/events/Media";
 
 export class Media extends Entity {
 

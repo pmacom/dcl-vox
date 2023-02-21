@@ -10,6 +10,8 @@ import { Dash_Wait } from "dcldash";
 import { makeid } from "zootools";
 import { VoxelManager_Instance } from "src/vox/manager";
 import { VoxelUI } from "./VoxelUI";
+import { MediaManager_Instance } from "src/media/Manager";
+import { initMediaListeners } from "src/media/mediaListeners";
 
 export class ColyseusClient {
     endpoint: string = `wss://dcl-voxel-api.herokuapp.com`;
@@ -20,8 +22,11 @@ export class ColyseusClient {
     connecting: boolean = false;
     onRoomConnectedCbs: ((room: Room) => void)[] = [];
     voxelManager!: VoxelManager_Instance;
+    mediaManager!: MediaManager_Instance;
     voxelUI = new VoxelUI(this);
-    constructor() { }
+    constructor() {
+        initMediaListeners()
+    }
 
     onRoomConnected(cb: (room: Room) => void) {
         this.onRoomConnectedCbs.push(cb);
@@ -31,6 +36,7 @@ export class ColyseusClient {
     setConfig(
         config: {
             voxelManager: VoxelManager_Instance, 
+            mediaManager: MediaManager_Instance, 
             endpoint: string, 
             sceneOwner: string, 
             baseParcel: string, 
@@ -41,6 +47,8 @@ export class ColyseusClient {
     ) {
         if(config.debug == undefined) config.debug = true;
         this.voxelManager = config.voxelManager;
+        this.mediaManager = config.mediaManager;
+        this.mediaManager.setClient(this);
         this.endpoint = config.endpoint;
         this.client = new Client(this.endpoint);
         this.options = {};
@@ -76,7 +84,7 @@ export class ColyseusClient {
         options.timezone = new Date().toString();
 
         //Ensure avatars are pointed to content servers
-        const regex = /^https?:\/\/[^\/]+\.[^\/]+\/content\/contents\/[a-zA-Z0-9]+$/;
+        const regex = /^https?:\/\/[^\/]+\.[^\/]+\/content\/contents\/[a-zA-Z0-9_]+$/;
         const snapshots = options?.userData?.avatar?.snapshots;
         Object.keys(snapshots).forEach(key => {
             const snapshot = snapshots[key];
@@ -93,7 +101,6 @@ export class ColyseusClient {
         try {
             this.room = await this.client.joinOrCreate<any>(options.roomName, options);
             if (this.room) {
-                this.log("YUHH")
                 this.onRoomConnectedCbs.forEach(cb => cb(this.room!));
                 this.onConnected(id);
                 this.room.onStateChange((state) => {
@@ -101,9 +108,6 @@ export class ColyseusClient {
                     this.voxelUI.setSceneId(state.scene.id);
                     this.voxelUI.setVoxelCount(state.voxels.size);
                     this.voxelUI.setSceneName(state.scene.nickname);
-                    // for (const [voxelId, voxel] of state.voxels.entries()) {
-                    //     this.voxelManager.set(voxel.x, voxel.y, voxel.z, voxel.tileSetId);
-                    // }
                 });
                 this.room.onMessage("notification", (msg: any) => {
                     const { message } = msg;
@@ -115,6 +119,24 @@ export class ColyseusClient {
                     })
                     this.voxelManager.renderAll()
                 });
+                this.room.onMessage("sync-media", (message: any) => {
+                    message.media.forEach((media: any) => {
+                        this.mediaManager.set(
+                            media._id,
+                            media.mediaType,
+                            media.source,
+                            media.x,
+                            media.y,
+                            media.z,
+                            media.rx,
+                            media.ry,
+                            media.rz,
+                            media.sx,
+                            media.sy,
+                            media.sz,
+                        )
+                    })
+                });
                 this.room.onMessage("add-voxel", (message) => {
                     const { x, y, z, tileSetId } = message;
                     this.voxelManager.set(x, y, z, tileSetId);
@@ -123,11 +145,26 @@ export class ColyseusClient {
                     const { x, y, z } = message;
                     this.voxelManager.set(x, y, z, null);
                 });
+                this.room.onMessage("add-media", (message) => {
+                    const { 
+                        mediaId, mediaType, source, x, y, z, rx, ry, rz, sx, sy, sz
+                    } = message;
+                    this.mediaManager.set(
+                        mediaId, mediaType, source, x, y, z, rx, ry, rz, sx, sy, sz
+                    );
+                });
+                this.room.onMessage("remove-media", (message) => {
+                    const { mediaId } = message;
+                    this.mediaManager.remove(mediaId);
+                });
                 this.room.onMessage("reset-scene", (message) => {
                     for(const [key, vox] of this.voxelManager._voxels.entries()){
                         if(!(vox.x === 8 && vox.y === 0 && vox.z === 8)){
                             this.voxelManager.set(vox.x, vox.y, vox.z, null);
                         }
+                    }
+                    for(const [key, media] of this.mediaManager._media.entries()){
+                        media.remove();
                     }
                 });
                 this.room.onLeave((code) => {
