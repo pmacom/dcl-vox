@@ -1,12 +1,7 @@
 import { getUserData } from "@decentraland/Identity";
 import { AppState } from "src/state/AppState";
 import { GameModes, ModeChanged } from "src/state/events/Modes";
-import { MediaItemPickedUp, MediaItemPlaced, MediaType } from "src/state/events/Media";
-
-// @Component("IsHoldable")
-// export class IsHoldable {
-//   avatarId!: string
-// }
+import { MediaType } from "src/state/events/Media";
 
 export class HoldableMediaEntity extends Entity {
     avatarId!: string;
@@ -37,6 +32,12 @@ export class HoldableMediaEntity extends Entity {
                 }
             },
         );
+    }
+    setSource(source: string) {
+        this.source = source;
+    }
+    setMediaType(mediaType: MediaType) {
+        this.mediaType = mediaType;
     }
     setId(id: string) {
         this.id = id;

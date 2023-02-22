@@ -1,5 +1,5 @@
 import { HoldableMediaEntity } from "src/media/HoldableMediaEntity";
-import { MediaManager } from "src/media/Manager";
+import { MediaManager } from "src/media/MediaManager";
 import { EventListener } from "./events/listener";
 import { GameModes, ModeChanged } from "./events/Modes";
 import { MediaItemPickedUp, MediaItemPlaced, MediaType, MediaItemChanged } from "./events/Media";
@@ -40,9 +40,6 @@ export class _AppState {
             this.holdingMediaItem = undefined;
             this.listener.events.fireEvent(new MediaItemPlaced(item, hitPoint!, normal!));
             this.setMediaType(MediaType.NONE);
-            // MediaManager.add(item.type, item.source, item.media.getComponent(Transform));
-
-            //get rid of the local item because its gonna be re synced 
         }
     }
 }

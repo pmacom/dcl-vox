@@ -10,7 +10,7 @@ import { Dash_Wait } from "dcldash";
 import { makeid } from "zootools";
 import { VoxelManager_Instance } from "src/vox/manager";
 import { VoxelUI } from "./VoxelUI";
-import { MediaManager_Instance } from "src/media/Manager";
+import { MediaManager_Instance } from "src/media/MediaManager";
 import { initMediaListeners } from "src/media/mediaListeners";
 
 export class ColyseusClient {
@@ -121,19 +121,9 @@ export class ColyseusClient {
                 });
                 this.room.onMessage("sync-media", (message: any) => {
                     message.media.forEach((media: any) => {
+                        const { _id, mediaType, source, x, y, z, rx, ry, rz, sx, sy, sz } = media;
                         this.mediaManager.set(
-                            media._id,
-                            media.mediaType,
-                            media.source,
-                            media.x,
-                            media.y,
-                            media.z,
-                            media.rx,
-                            media.ry,
-                            media.rz,
-                            media.sx,
-                            media.sy,
-                            media.sz,
+                            _id, mediaType, source, x, y, z, rx, ry, rz, sx, sy, sz
                         )
                     })
                 });
@@ -146,12 +136,8 @@ export class ColyseusClient {
                     this.voxelManager.set(x, y, z, null);
                 });
                 this.room.onMessage("add-media", (message) => {
-                    const { 
-                        mediaId, mediaType, source, x, y, z, rx, ry, rz, sx, sy, sz
-                    } = message;
-                    this.mediaManager.set(
-                        mediaId, mediaType, source, x, y, z, rx, ry, rz, sx, sy, sz
-                    );
+                    const { mediaId, mediaType, source, x, y, z, rx, ry, rz, sx, sy, sz } = message;
+                    this.mediaManager.set(mediaId, mediaType, source, x, y, z, rx, ry, rz, sx, sy, sz);
                 });
                 this.room.onMessage("remove-media", (message) => {
                     const { mediaId } = message;

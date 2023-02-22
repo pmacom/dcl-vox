@@ -1,9 +1,9 @@
-import { client } from "./client/ColyseusClient"
 import { Image } from "./media/Image";
 import { NFT } from "./media/NFT";
 import { Video } from "./media/Video";
+import { client } from "./client/ColyseusClient"
 import { VoxelManager } from "./vox/manager"
-import { MediaManager } from "./media/Manager";
+import { MediaManager } from "./media/MediaManager";
 
 client.setConfig({
     mediaManager: MediaManager,
@@ -17,7 +17,6 @@ client.setConfig({
     debug: true,
 });
 VoxelManager.set(8, 0, 8, 0)
-
 
 // const mediaNFT = new NFT(undefined,`ethereum://0x49cf6f5d44e70224e2e23fdcdd2c053f30ada28b/2055`,{
 //     position: new Vector3(8,3,8),

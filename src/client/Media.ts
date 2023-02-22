@@ -1,11 +1,23 @@
 import { Dash_Cache_Texture, Dash_Cache_VideoClip, Dash_Cache_VideoMaterial } from "dcldash";
 import { MediaType } from "src/state/events/Media";
 
-export class Media extends Entity {
+enum MediaDefaultSources {
+    NFT = "ethereum://0x49cf6f5d44e70224e2e23fdcdd2c053f30ada28b/2055",
+    IMAGE = "https://metazoo-blob.nyc3.digitaloceanspaces.com/97_SCHEDULE_343822f45e.jpeg?updated_at=2023-02-10T23:46:55.235Z",
+    VIDEO = "https://metazoo-blob.nyc3.digitaloceanspaces.com/tunnel_flicker_loop_e2754f3871.mp4?updated_at=2023-01-16T07:07:37.706Z",
+    NONE = "",
+}
 
-    constructor(public mediaType: MediaType, public mediaSrc: string) {
+export class MediaPlacementTool extends Entity {
+    public mediaType!: MediaType
+    public mediaSrc!: string
+    constructor() {
         super()
         this.addComponent(new Transform())
+    }
+    setMedia(mediaType: MediaType, mediaSrc?: string) {
+        this.mediaType = mediaType;
+        this.mediaSrc = mediaSrc ?? MediaDefaultSources[mediaType];
         switch (this.mediaType) {
             case MediaType.IMAGE:
                 this.addComponent(new PlaneShape());
@@ -30,7 +42,7 @@ export class Media extends Entity {
                 break;
         }
     }
-    setTransform(media: any){
+    setTransform(media: any) {
         const { x, y, z, rx, ry, rz, sx, sy, sz } = media;
         this.getComponent(Transform).position = new Vector3(x, y, z);
         this.getComponent(Transform).scale = new Vector3(sx, sy, sz);

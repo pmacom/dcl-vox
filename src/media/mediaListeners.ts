@@ -1,7 +1,7 @@
 import { AppState } from "src/state/AppState";
 import { MediaItemPickedUp, MediaItemPlaced } from "src/state/events/Media";
 import { GameModes } from "src/state/events/Modes";
-import { MediaManager } from "./Manager";
+import { MediaManager } from "./MediaManager";
 
 export function initMediaListeners() {
     AppState.listener.addListener<MediaItemPickedUp>(
