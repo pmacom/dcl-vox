@@ -1,20 +1,20 @@
-import { client } from "src/client/ColyseusClient"
-import { AppState } from "src/state/AppState"
-import { GameModes } from "src/state/events/Modes"
+
+import { GameControllerInstance } from "src/engine/GameController"
+import { GameModes, ModeChanged } from "src/engine/listeners/events/Modes"
 import { CastleTiles } from "../tiles/castle"
-import { TileData, TileStatus, VoxType } from "../tiles/interfaces"
+import { TileData, TileStatus } from "../tiles/interfaces"
 import { getNeighborPathSet, getNeighborPaths, getPath, getSurrounding, getWeight } from "./utils"
 
 
 declare const Map:any
 declare const Set:any
 
-export class VoxelManager_Instance {
+export class VoxelManager {
     public _voxels: typeof Map = new Map()
     public _neighbors: typeof Map = new Map()
     public _tileId: number = 0
-  
-    constructor(){
+
+    constructor(public gameController: GameControllerInstance){
       this.init()
     }
   
@@ -23,7 +23,7 @@ export class VoxelManager_Instance {
         for(let y=0; y<16; y++){
           for(let z=0; z<16; z++){
             const path = getPath(x,y,z)
-            this._voxels.set(path, new Voxel(x, y, z))
+            this._voxels.set(path, new Voxel(this.gameController, x, y, z))
           }
         }
       }
@@ -45,7 +45,7 @@ export class VoxelManager_Instance {
     }
   
     public add(x:number, y:number, z:number){
-      client.room?.send("voxel-added", {
+      this.gameController.client.room?.send("voxel-added", {
         baseParcel: "0,0",
         x,
         y,
@@ -55,7 +55,7 @@ export class VoxelManager_Instance {
     }
     
     public delete(x:number, y:number, z:number){
-      client.room?.send("voxel-removed", {
+      this.gameController.client.room?.send("voxel-removed", {
         baseParcel: "0,0",
         x,
         y,
@@ -138,6 +138,7 @@ class Voxel {
     private _neighbors: typeof Set
   
     constructor(
+      public gameController: GameControllerInstance,
       public x:number,
       public y:number,
       public z:number
@@ -145,6 +146,19 @@ class Voxel {
       this.position = new Vector3(x,y,z)
       this._tileSetId = null
       this._neighbors = getNeighborPathSet(x,y,z)
+
+      this.gameController.listener.addListener<ModeChanged>(
+        "mode-changed",
+        ModeChanged,
+        ({ mode }) => {
+            switch (mode) {
+                case GameModes.VIEW: { this.entity && (this.entity.getComponent(OnPointerDown).hoverText = `View Mode`); } break;
+                case GameModes.EDIT: {  this.entity && (this.entity.getComponent(OnPointerDown).hoverText = `(E) Pick Up\n(F) Edit In Place`); } break;
+                case GameModes.PLACEMENT: {  this.entity && (this.entity.getComponent(OnPointerDown).hoverText = `(E) Drop`); } break;
+                case GameModes.PLACEMENT_EXISTING: {  this.entity && (this.entity.getComponent(OnPointerDown).hoverText = `(E) Drop`); } break;
+            }
+        },
+    );
     }
   
     public show(){
@@ -161,7 +175,7 @@ class Voxel {
     }
   
     public hide(){
-      VoxelSelector.position = new Vector3(0,0,0)
+      this.gameController.voxelSelector.position = new Vector3(0,0,0)
       if(this.entity){
         if(this.entity.hasComponent(OnPointerDown)) this.entity.removeComponent(OnPointerDown)
         if(this.entity.hasComponent(OnPointerHoverEnter)) this.entity.removeComponent(OnPointerHoverEnter)
@@ -174,8 +188,8 @@ class Voxel {
     }
 
     public updateSelf(){
-        const hasAbove = VoxelManager.get(this.x, this.y+1, this.z) as Voxel
-        const hasBelow = VoxelManager.get(this.x, this.y-1, this.z) as Voxel
+        const hasAbove = this.gameController.voxelManager.get(this.x, this.y+1, this.z) as Voxel
+        const hasBelow = this.gameController.voxelManager.get(this.x, this.y-1, this.z) as Voxel
         // log(!!hasAbove, !!hasBelow, hasAbove)
         this.entity?.addComponentOrReplace(hasAbove && hasAbove.active ? dirt : grass)
         if(hasBelow && hasBelow.active){ hasBelow.updateSelf() }
@@ -187,7 +201,7 @@ class Voxel {
       let tile: TileData = CastleTiles[0]
 
       if(typeof this._tileSetId == 'number'){
-        const neighbors = VoxelManager.getSurroundingTileTypes(this.x, this.y, this.z, this._tileSetId)
+        const neighbors = this.gameController.voxelManager.getSurroundingTileTypes(this.x, this.y, this.z, this._tileSetId)
 
         CastleTiles.forEach((tileData: TileData) => {
             let _w = -1
@@ -217,14 +231,14 @@ class Voxel {
     }
   
     public updateNeighbors(){
-      // const hasAbove = VoxelManager.get(this.x, this.y+1, this.z) as Voxel
-      // const hasBelow = VoxelManager.get(this.x, this.y-1, this.z) as Voxel
+      // const hasAbove = this.gameController.voxelManager.get(this.x, this.y+1, this.z) as Voxel
+      // const hasBelow = this.gameController.voxelManager.get(this.x, this.y-1, this.z) as Voxel
       // if(hasAbove && hasAbove.active){ hasBelow.updateSelf() }
       // log('updating')
       // if(hasAbove && hasBelow.active){ hasAbove.updateSelf() }
     //   const neighbors: Voxel[] = []
     //   this._neighbors.forEach((path:string) => {
-    //     const voxel = VoxelManager.getActiveFromPath(path)
+    //     const voxel = this.gameController.voxelManager.getActiveFromPath(path)
     //     if(voxel){ neighbors.push(voxel) }
     //   })
     //   log(neighbors.length)
@@ -252,23 +266,25 @@ class Voxel {
     }
   
     onClick(event: InputEventResult){
-      if(AppState.mode === GameModes.PLACEMENT){
-        log("PLACE ITEM")
-        if(event.hit){
-          log("HIT")
-          if(AppState.isHolding() && AppState.holdingMediaItem){
-            log("HOLDING")
-            AppState.pickOrPlaceMediaItem(AppState.holdingMediaItem, false, event.hit.hitPoint as any, event.hit.normal as any);
+      if(event.hit){
+        if(this.gameController.state.mode === GameModes.PLACEMENT 
+          ||this.gameController.state.mode === GameModes.PLACEMENT_EXISTING
+        ){          
+          if(this.gameController.state.isHoldingMedia() && this.gameController.state.holdingMediaItem){
+            this.gameController.state.pickOrPlaceMediaItem(this.gameController.state.holdingMediaItem, false, event.hit.hitPoint as any, event.hit.normal as any);
+          }else if(this.gameController.state.isHoldingPlacementTool() && this.gameController.state.holdingMediaPlacementTool){
+            this.gameController.state.placeNewMediaItem(this.gameController.state.holdingMediaPlacementTool!, false, event.hit.hitPoint as any, event.hit.normal as any);
+            this.gameController.state.holdingMediaPlacementTool = undefined;
           }
         }
       }
     }
   
     onHoverEnter(){
-      if(AppState.mode === GameModes.EDIT){
-        VoxelSelector.position = this._transform.position;
+      if(this.gameController.state.mode === GameModes.EDIT){
+        this.gameController.voxelSelector.position = this._transform.position;
       }else{
-        VoxelSelector.position = new Vector3(0, 0, 0);
+        this.gameController.voxelSelector.position = new Vector3(0, 0, 0);
       }
     }
   
@@ -291,12 +307,12 @@ class Voxel {
 
 
 
-class VoxelSelector_Instance {
+export class VoxelSelector {
     private entity: Entity = new Entity()
     private _transform: Transform = new Transform()
     private _shape: GLTFShape
   
-    constructor(){
+    constructor(public gameController: GameControllerInstance){
       engine.addEntity(this.entity)
       this._shape = new GLTFShape('models/voxel_selector.glb')
       this.entity.addComponent(this._shape)
@@ -305,6 +321,17 @@ class VoxelSelector_Instance {
         button: ActionButton.ANY,
         hoverText: '(E) Add\n(F) Remove'
       }))
+      this.gameController.listener.addListener<ModeChanged>(
+        "mode-changed",
+        ModeChanged,
+        ({ mode }) => {
+            if(mode === GameModes.EDIT){
+                if(!this.entity.isAddedToEngine()) engine.addEntity(this.entity)
+            }else{
+              if(this.entity.isAddedToEngine()) engine.removeEntity(this.entity)
+            }
+        }
+    );
     }
   
     public set position(position: Vector3){
@@ -312,7 +339,7 @@ class VoxelSelector_Instance {
     }
   
     onEvent(event: InputEventResult){
-      if(AppState.mode === GameModes.EDIT){
+      if(this.gameController.state.mode === GameModes.EDIT){
         switch(event.buttonId){
             case 0:
             case 1:
@@ -333,22 +360,22 @@ class VoxelSelector_Instance {
   
       switch(event.hit?.meshName){
         case 'Above':
-          VoxelManager.add(_x, _y+1, _z)
+          this.gameController.voxelManager.add(_x, _y+1, _z)
           break;
         case 'Below':
-          VoxelManager.add(_x, _y-1, _z)
+          this.gameController.voxelManager.add(_x, _y-1, _z)
           break;
         case 'North':
-          VoxelManager.add(_x, _y, _z-1)
+          this.gameController.voxelManager.add(_x, _y, _z-1)
           break;
         case 'East':
-          VoxelManager.add(_x-1, _y, _z)
+          this.gameController.voxelManager.add(_x-1, _y, _z)
           break;
         case 'South':
-          VoxelManager.add(_x, _y, _z+1)
+          this.gameController.voxelManager.add(_x, _y, _z+1)
           break;
         case 'West':
-          VoxelManager.add(_x+1, _y, _z)
+          this.gameController.voxelManager.add(_x+1, _y, _z)
           break;
       }
     }
@@ -358,12 +385,12 @@ class VoxelSelector_Instance {
       const _x = x-.5
       const _y = y-.5
       const _z = z-.5
-      VoxelManager.delete(_x, _y, _z)
+      this.gameController.voxelManager.delete(_x, _y, _z)
     }
   }
 
-export const VoxelSelector = new VoxelSelector_Instance()
-export const VoxelManager = new VoxelManager_Instance()
+// export const VoxelSelector = new VoxelSelector_Instance()
+// export const VoxelManager = new VoxelManager_Instance()
 
 
 

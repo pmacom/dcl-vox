@@ -8,57 +8,47 @@ import { getCurrentRealm } from "@decentraland/EnvironmentAPI";
 import { getUserData } from "@decentraland/Identity";
 import { Dash_Wait } from "dcldash";
 import { makeid } from "zootools";
-import { VoxelManager_Instance } from "src/vox/manager";
-import { VoxelUI } from "./VoxelUI";
-import { MediaManager_Instance } from "src/media/MediaManager";
-import { initMediaListeners } from "src/media/mediaListeners";
+import { GameControllerInstance } from "../GameController";
+import { getParcel } from "@decentraland/ParcelIdentity";
 
-export class ColyseusClient {
+export class GameClient {
     endpoint: string = `wss://dcl-voxel-api.herokuapp.com`;
     options?: any;
     client!: Client;
-    room?: Room;
+    room?: Room | null;
     attempts: number = 0;
     connecting: boolean = false;
     onRoomConnectedCbs: ((room: Room) => void)[] = [];
-    voxelManager!: VoxelManager_Instance;
-    mediaManager!: MediaManager_Instance;
-    voxelUI = new VoxelUI(this);
-    constructor() {
-        initMediaListeners()
-    }
+
+    constructor(public gameController: GameControllerInstance) { }
 
     onRoomConnected(cb: (room: Room) => void) {
         this.onRoomConnectedCbs.push(cb);
         this.options.debug && this.log(`onRoomConnected Callback was set`)
     }
 
-    setConfig(
+    async setConfig(
         config: {
-            voxelManager: VoxelManager_Instance, 
-            mediaManager: MediaManager_Instance, 
-            endpoint: string, 
-            sceneOwner: string, 
-            baseParcel: string, 
-            nickname: string, 
-            roomName: string, 
+            endpoint: string,
+            sceneOwner: string,
+            nickname: string,
             debug?: boolean,
         }
     ) {
-        if(config.debug == undefined) config.debug = true;
-        this.voxelManager = config.voxelManager;
-        this.mediaManager = config.mediaManager;
-        this.mediaManager.setClient(this);
+        if (config.debug == undefined) config.debug = true;
+        const { land: { sceneJsonData: { scene: { parcels, base: baseParcel } } }} = await getParcel();
+        this.gameController.mediaManager.setClient(this);
         this.endpoint = config.endpoint;
         this.client = new Client(this.endpoint);
         this.options = {};
-        this.options.baseParcel = config.baseParcel;
+        this.options.baseParcel = baseParcel;
+        this.options.parcels = parcels;
         this.options.nickname = config.nickname;
-        this.options.roomName = config.roomName;
+        this.options.roomName = "update";
         this.options.sceneOwner = config.sceneOwner;
         this.options.debug = config.debug;
         this.options.debug && this.log(`Config was set`)
-        return this.connect(this.options);
+        return await this.connect(this.options);
     }
 
     async connect(options: any & {
@@ -67,7 +57,7 @@ export class ColyseusClient {
         debug?: boolean;
     } = this.options): Promise<Room | null> {
 
-        if (options.debug == undefined) this.options.debug = false;
+        if (options.debug == undefined) options.debug = false;
         else this.options.debug = options.undefined;
 
         //An ID for debugging connection instances
@@ -76,7 +66,7 @@ export class ColyseusClient {
         //Record attempts. In case of disconnect we will use this to time the reconnection attempt
         this.attempts++;
         if (this.attempts > 15) this.attempts = 15;
-        this.options.debug && this.log(`Attempting connection to server id:${id} (attempts: ${this.attempts})`)
+        options.debug && this.log(`Attempting connection to server id:${id} (attempts: ${this.attempts})`)
 
         //Populate user and options
         options.realm = await getCurrentRealm();
@@ -101,56 +91,56 @@ export class ColyseusClient {
         try {
             this.room = await this.client.joinOrCreate<any>(options.roomName, options);
             if (this.room) {
+                this.log("ROOM!")
                 this.onRoomConnectedCbs.forEach(cb => cb(this.room!));
                 this.onConnected(id);
                 this.room.onStateChange((state) => {
                     this.log(`STATE CHANGE`, state)
-                    this.voxelUI.setSceneId(state.scene.id);
-                    this.voxelUI.setVoxelCount(state.voxels.size);
-                    this.voxelUI.setSceneName(state.scene.nickname);
+                    this.gameController.voxelUI.setSceneId(state.scene.id);
+                    this.gameController.voxelUI.setVoxelCount(state.voxels.size);
+                    this.gameController.voxelUI.setMediaCount(state.media.size);
+                    this.gameController.voxelUI.setSceneName(state.scene.nickname);
                 });
                 this.room.onMessage("notification", (msg: any) => {
                     const { message } = msg;
-                    this.voxelUI.notification(message);
+                    this.gameController.voxelUI.notification(message);
                 });
                 this.room.onMessage("sync-voxels", (message: any) => {
                     message.voxels.forEach((voxel: any) => {
-                        this.voxelManager.set(voxel.x, voxel.y, voxel.z, voxel.tileSetId, true);
+                        this.gameController.voxelManager.set(voxel.x, voxel.y, voxel.z, voxel.tileSetId, true);
                     })
-                    this.voxelManager.renderAll()
+                    this.gameController.voxelManager.renderAll()
                 });
                 this.room.onMessage("sync-media", (message: any) => {
                     message.media.forEach((media: any) => {
-                        const { _id, mediaType, source, x, y, z, rx, ry, rz, sx, sy, sz } = media;
-                        this.mediaManager.set(
-                            _id, mediaType, source, x, y, z, rx, ry, rz, sx, sy, sz
-                        )
+                        const { _id, mediaType, settings, x, y, z, rx, ry, rz, sx, sy, sz } = media;
+                        this.gameController.mediaManager.set(_id, mediaType, settings, x, y, z, rx, ry, rz, sx, sy, sz);
                     })
                 });
                 this.room.onMessage("add-voxel", (message) => {
                     const { x, y, z, tileSetId } = message;
-                    this.voxelManager.set(x, y, z, tileSetId);
+                    this.gameController.voxelManager.set(x, y, z, tileSetId);
                 });
                 this.room.onMessage("remove-voxel", (message) => {
                     const { x, y, z } = message;
-                    this.voxelManager.set(x, y, z, null);
+                    this.gameController.voxelManager.set(x, y, z, null);
                 });
                 this.room.onMessage("add-media", (message) => {
-                    const { mediaId, mediaType, source, x, y, z, rx, ry, rz, sx, sy, sz } = message;
-                    this.mediaManager.set(mediaId, mediaType, source, x, y, z, rx, ry, rz, sx, sy, sz);
+                    const { mediaId, mediaType, settings, x, y, z, rx, ry, rz, sx, sy, sz } = message;
+                    this.gameController.mediaManager.set(mediaId, mediaType, settings, x, y, z, rx, ry, rz, sx, sy, sz);
                 });
                 this.room.onMessage("remove-media", (message) => {
                     const { mediaId } = message;
-                    this.mediaManager.remove(mediaId);
+                    this.gameController.mediaManager.remove(mediaId);
                 });
                 this.room.onMessage("reset-scene", (message) => {
-                    for(const [key, vox] of this.voxelManager._voxels.entries()){
-                        if(!(vox.x === 8 && vox.y === 0 && vox.z === 8)){
-                            this.voxelManager.set(vox.x, vox.y, vox.z, null);
+                    for (const [key, vox] of this.gameController.voxelManager._voxels.entries()) {
+                        if (vox.active && !(vox.x === 8 && vox.y === 0 && vox.z === 8)) {
+                            this.gameController.voxelManager.set(vox.x, vox.y, vox.z, null);
                         }
                     }
-                    for(const [key, media] of this.mediaManager._media.entries()){
-                        media.remove();
+                    for (const [key] of this.gameController.mediaManager._media.entries()) {
+                        this.gameController.mediaManager.remove(key);
                     }
                 });
                 this.room.onLeave((code) => {
@@ -164,6 +154,7 @@ export class ColyseusClient {
             return this.room;
         } catch (e: any) {
             this.onDisconnect(id, handleReconnection);
+            this.log(`Auth error: ${e.message}`);
             return null;
         }
     }
@@ -182,5 +173,3 @@ export class ColyseusClient {
         log(`[ Colyseus ]`, ...args)
     }
 }
-
-export const client = new ColyseusClient();

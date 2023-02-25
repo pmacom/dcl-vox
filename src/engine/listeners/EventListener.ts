@@ -1,8 +1,7 @@
-import { _AppState } from "../AppState";
+import { GameControllerInstance } from "../GameController";
 
 declare const Map: any;
 declare const Set: any;
-
 
 export interface IEventListener {
     name: string;
@@ -12,7 +11,7 @@ export interface IEventListener {
 export class EventListener {
     events = new EventManager();
     listeners: typeof Map = new Map();
-    constructor(public appState: _AppState) {
+    constructor(public gameController: GameControllerInstance) {
 
     }
     public addListener<T>(
